@@ -1,56 +1,66 @@
 """
 Orquestador de Agentes (LangGraph).
-Define el flujo de trabajo asíncrono desde la extracción hasta la persistencia[cite: 11, 33].
+Implementa aristas condicionales y reintentos para resiliencia [cite: 40-41].
 """
-from typing import Dict, Any, TypedDict, List
+import operator
+from typing import Dict, Any, TypedDict, List, Annotated, Union
 from langgraph.graph import StateGraph, END
 from langchain_google_genai import ChatGoogleGenerativeAI
 from domain.models import VideoAnalysis
-from infrastructure.adapters.youtube_adapter import YouTubeAdapter
+from infrastructure.adapters.youtube_adapter import YouTubeAdapter, YouTubeError
 
+# --- 1. Estado con Reductor de Errores ---
 class GraphState(TypedDict):
     video_url: str
     transcript: str
     metadata: Dict[str, Any]
     analysis: Dict[str, Any]
-    errors: List[str]
+    # annotated con operator.add permite que múltiples nodos acumulen errores
+    errors: Annotated[List[str], operator.add]
 
-# Inicialización de componentes (Inyección manual para este challenge)
+# --- 2. Inicialización con Reintentos ---
 yt_adapter = YouTubeAdapter()
-llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0)
+# with_retry activa el mecanismo de backoff exponencial ante cuotas de API
+llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0).with_retry()
 structured_llm = llm.with_structured_output(VideoAnalysis)
 
 async def extraction_node(state: GraphState):
-    """Nodo 1: Obtención de datos brutos[cite: 12]."""
+    """Nodo de extracción con captura de errores clasificados."""
     try:
         data = await yt_adapter.fetch_full_data(state["video_url"])
         return {**data, "errors": []}
-    except Exception as e:
+    except YouTubeError as e:
         return {"errors": [str(e)]}
 
 async def analysis_node(state: GraphState):
-    """Nodo 2 & 3: Análisis de sentimiento, tono y estructuración[cite: 13, 14]."""
-    if state.get("errors"): return state
-    
-    prompt = f"Analiza esta transcripción y extrae sentimiento, tono y 3 puntos clave:\n\n{state['transcript']}"
-    result = await structured_llm.ainvoke(prompt)
-    return {"analysis": result.dict()}
+    """Análisis con Gemini garantizando la estructura de salida."""
+    prompt = f"Analiza esta transcripción:\n\n{state['transcript']}"
+    try:
+        result = await structured_llm.ainvoke(prompt)
+        return {"analysis": result.dict()}
+    except Exception as e:
+        return {"errors": [f"Fallo en LLM: {str(e)}"]}
 
-async def persistence_node(state: GraphState):
-    """Nodo 4: Persistencia final en base de datos[cite: 30]."""
-    # Aquí irá la lógica del repositorio Django
-    print("Guardando resultado en Postgres...")
-    return state
+# --- 3. Lógica de Ruteo (Conditional Edge) ---
+def should_continue(state: GraphState) -> str:
+    """Determina si el flujo debe abortar por errores críticos[cite: 40]."""
+    if state.get("errors"):
+        return "end"
+    return "continue"
 
-# Configuración del Grafo
 workflow = StateGraph(GraphState)
 workflow.add_node("extract", extraction_node)
 workflow.add_node("analyze", analysis_node)
-workflow.add_node("persist", persistence_node)
 
 workflow.set_entry_point("extract")
-workflow.add_edge("extract", "analyze")
-workflow.add_edge("analyze", "persist")
-workflow.add_edge("persist", END)
+
+# Arista condicional: si falla la extracción, termina el flujo
+workflow.add_conditional_edges(
+    "extract",
+    should_continue,
+    {"continue": "analyze", "end": END}
+)
+
+workflow.add_edge("analyze", END)
 
 app = workflow.compile()
