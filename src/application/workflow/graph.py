@@ -11,6 +11,7 @@ from typing import Dict, Any, TypedDict, List, Annotated
 from langgraph.graph import StateGraph, END
 from domain.models import VideoAnalysis
 from infrastructure.adapters.youtube_adapter import YouTubeAdapter
+from infrastructure.adapters.exceptions import InfrastructureError
 from infrastructure.adapters.llm import get_llm_adapter
 
 class GraphState(TypedDict):

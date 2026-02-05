@@ -69,10 +69,10 @@ ASGI_APPLICATION = 'config.asgi.application'
 # Database - PostgreSQL configuration
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-# Use SQLite for testing when env var is set or PostgreSQL host is 'db'
+# Use SQLite only for pytest, PostgreSQL for everything else (including Docker)
 import sys
-if 'pytest' in sys.modules or os.getenv('POSTGRES_HOST') == 'db':
-    # Use SQLite for local testing
+if 'pytest' in sys.modules:
+    # Use SQLite for testing
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -80,6 +80,7 @@ if 'pytest' in sys.modules or os.getenv('POSTGRES_HOST') == 'db':
         }
     }
 else:
+    # Use PostgreSQL for development and production
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',

@@ -2,6 +2,7 @@
 Capa de Aplicación: Orquestación de casos de uso.
 Aquí reside la lógica que conecta los adaptadores de entrada con el dominio y el workflow.
 """
+from asgiref.sync import sync_to_async
 from application.workflow.graph import app
 from infrastructure.persistence.models import VideoRecord
 
@@ -29,19 +30,20 @@ class AnalyzeVideoUseCase:
         if final_state.get("errors"):
             raise ValueError(f"Error en el workflow: {final_state['errors'][0]}")
 
-        # 2. Persistencia (Delegada aquí para asegurar el cumplimiento del nodo de persistencia [cite: 30])
-        # Nota: En una arquitectura más estricta, esto iría dentro del persist_node 
-        # usando un repositorio inyectado.
-        record = VideoRecord.objects.create(
-            url=video_url,
-            title=final_state["metadata"]["title"],
-            transcript=final_state["transcript"],
-            duration_seconds=final_state["metadata"]["duration_seconds"],
-            language_code=final_state["metadata"]["language_code"],
-            sentiment=final_state["analysis"]["sentiment"],
-            sentiment_score=final_state["analysis"]["sentiment_score"],
-            tone=final_state["analysis"]["tone"],
-            key_points=final_state["analysis"]["key_points"]
-        )
+        # 2. Persistencia usando sync_to_async 
+        @sync_to_async
+        def create_record():
+            return VideoRecord.objects.create(
+                url=video_url,
+                title=final_state["metadata"]["title"],
+                transcript=final_state["transcript"],
+                duration_seconds=final_state["metadata"]["duration_seconds"],
+                language_code=final_state["metadata"]["language_code"],
+                sentiment=final_state["analysis"]["sentiment"],
+                sentiment_score=final_state["analysis"]["sentiment_score"],
+                tone=final_state["analysis"]["tone"],
+                key_points=final_state["analysis"]["key_points"]
+            )
         
+        record = await create_record()
         return record
