@@ -34,7 +34,7 @@ class VideoAnalysisView(APIView):
             return Response(output_serializer.data, status=status.HTTP_201_CREATED)
             
         except Exception as e:
-            # Senior error handling: Logging detallado y respuesta amigable
+            # error handling: Logging detallado y respuesta amigable
             return Response(
                 {"error": str(e)}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
