@@ -4,13 +4,13 @@ Ahora utiliza las excepciones centralizadas para una clasificación profesional 
 """
 import asyncio
 from typing import Dict, Any
-from youtube_transcript_api import YouTubeTranscriptApi, VideoUnavailable, TranscriptsDisabled, NoTranscriptFound
-from youtube_transcript_api.formatters import TextFormatter
+from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api._errors import VideoUnavailable, TranscriptsDisabled, NoTranscriptFound
 from .exceptions import VideoNotFoundError, NoTranscriptError, YouTubeError
 
 class YouTubeAdapter:
     def __init__(self):
-        self.formatter = TextFormatter()
+        self.api = YouTubeTranscriptApi()
 
     async def fetch_full_data(self, video_url: str) -> Dict[str, Any]:
         video_id = self._extract_id(video_url)
@@ -39,5 +39,7 @@ class YouTubeAdapter:
         return url.split("/")[-1][:11]
 
     def _get_transcript(self, video_id: str) -> str:
-        raw = YouTubeTranscriptApi.get_transcript(video_id, languages=['es', 'en'])
-        return self.formatter.format_transcript(raw)
+        # Nueva API usa fetch() en instancia en lugar de get_transcript() estático
+        transcript = self.api.fetch(video_id, languages=['es', 'en'])
+        # Convertir a texto plano
+        return " ".join([entry.text for entry in transcript])

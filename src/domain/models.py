@@ -24,8 +24,8 @@ class VideoAnalysis(BaseModel):
     tone: str = Field(..., description="Tono detectado del orador")
     key_points: List[str] = Field(
         ..., 
-        min_items=3, 
-        max_items=3, 
+        min_length=3, 
+        max_length=3, 
         description="Resumen de los 3 puntos clave del video"
     )
 

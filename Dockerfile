@@ -26,13 +26,14 @@ WORKDIR /app
 COPY pyproject.toml poetry.lock ./
 
 # Instalamos dependencias de producción (sin las de dev)
-RUN poetry install --only main --no-root
+RUN poetry install --without dev --no-root
 
 # --- Stage 2: Runtime ---
 FROM python:3.12-slim AS runtime
 
 ENV PYTHONUNBUFFERED=1 \
-    PATH="/app/.venv/bin:$PATH"
+    PATH="/app/.venv/bin:$PATH" \
+    PYTHONPATH="/app/src"
 
 # Instalamos librerías necesarias para que funcione Postgres (libpq)
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -52,5 +53,5 @@ COPY . .
 # Exponemos el puerto de Django
 EXPOSE 8000
 
-# Comando para correr la aplicación
+# Comando para correr la aplicación con Uvicorn (ASGI)
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

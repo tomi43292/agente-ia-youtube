@@ -1,14 +1,173 @@
-## Arquitectura del Flujo (AI Agents)
+# 🎬 Agente IA YouTube - Video Analysis API
 
-El sistema utiliza **LangGraph** para orquestar un grafo cíclico de agentes que procesan el contenido del video de forma asíncrona.
+API REST que analiza videos de YouTube utilizando un flujo de agentes orquestado con **LangGraph**. Extrae transcripciones, realiza análisis de sentimiento/tono y genera resúmenes estructurados.
+
+## 🚀 Características
+
+- ✅ Extracción automática de transcripciones de YouTube
+- ✅ Análisis de sentimiento (positivo/negativo/neutral)
+- ✅ Detección de tono del orador
+- ✅ Generación de 3 puntos clave
+- ✅ Persistencia en PostgreSQL
+- ✅ API asíncrona con Django REST Framework
+
+## 📋 Requisitos Previos
+
+- Python 3.12+
+- Docker & Docker Compose
+- API Key de Google Gemini
+
+## 🛠️ Instalación
+
+### 1. Clonar el repositorio
+
+```bash
+git clone <repository-url>
+cd agente-ia-youtube
+```
+
+### 2. Configurar variables de entorno
+
+```bash
+cp .env.example .env
+# Editar .env con tus credenciales
+```
+
+Variables requeridas:
+| Variable | Descripción |
+|----------|-------------|
+| `POSTGRES_DB` | Nombre de la base de datos |
+| `POSTGRES_USER` | Usuario de PostgreSQL |
+| `POSTGRES_PASSWORD` | Contraseña de PostgreSQL |
+| `POSTGRES_HOST` | Host (usar `db` para Docker) |
+| `POSTGRES_PORT` | Puerto (default: 5432) |
+| `GOOGLE_API_KEY` | API Key de Google Gemini |
+
+### 3. Levantar con Docker
+
+```bash
+docker-compose up --build
+```
+
+### 4. Ejecutar migraciones (primera vez)
+
+```bash
+docker-compose exec web python manage.py migrate
+```
+
+## 📡 API Endpoints
+
+### POST `/api/v1/videos/analyze/`
+
+Analiza un video de YouTube y devuelve el análisis estructurado.
+
+**Request:**
+```json
+{
+  "video_url": "https://www.youtube.com/watch?v=VIDEO_ID"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "id": 1,
+  "url": "https://www.youtube.com/watch?v=VIDEO_ID",
+  "title": "Título del video",
+  "transcript": "Transcripción completa...",
+  "duration_seconds": 300,
+  "language_code": "es",
+  "sentiment": "positivo",
+  "sentiment_score": 0.85,
+  "tone": "educativo",
+  "key_points": [
+    "Punto clave 1",
+    "Punto clave 2",
+    "Punto clave 3"
+  ],
+  "created_at": "2026-02-05T12:00:00Z"
+}
+```
+
+## 🏗️ Arquitectura del Flujo (LangGraph)
 
 ```mermaid
-graph TD
-    __start__((START)) --> extract[Nodo de Extracción]
-    extract --> analyze[Nodo de Análisis Gemini]
-    analyze --> persist[Nodo de Persistencia Django]
-    persist --> __end__((END))
-    
-    style extract fill:#f9f,stroke:#333,stroke-width:2px
-    style analyze fill:#bbf,stroke:#333,stroke-width:2px
-    style persist fill:#bfb,stroke:#333,stroke-width:2px
+---
+config:
+  flowchart:
+    curve: linear
+---
+graph TD;
+        __start__([<p>__start__</p>]):::first
+        extract(extract)
+        analyze(analyze)
+        __end__([<p>__end__</p>]):::last     
+        __start__ --> extract;
+        extract -. &nbsp;end&nbsp; .-> __end__;
+        extract -. &nbsp;continue&nbsp; .-> analyze;
+        analyze --> __end__;
+        classDef default fill:#f2f0ff,line-height:1.2
+        classDef first fill-opacity:0
+        classDef last fill:#bfb6fc
+```
+
+### Nodos del Grafo
+
+| Nodo | Función |
+|------|---------|
+| `extract` | Obtiene transcripción y metadata del video |
+| `analyze` | Analiza sentimiento, tono y puntos clave con Gemini |
+
+## 🧪 Tests
+
+```bash
+# Instalar dependencias de desarrollo
+poetry install
+
+# Ejecutar tests
+poetry run pytest
+
+# Con cobertura
+poetry run pytest --cov=src
+```
+
+## 📁 Estructura del Proyecto
+
+```
+agente-ia-youtube/
+├── src/
+│   ├── application/
+│   │   ├── use_cases/      # Casos de uso
+│   │   └── workflow/       # Grafo LangGraph
+│   ├── domain/
+│   │   └── models.py       # Modelos Pydantic
+│   ├── infrastructure/
+│   │   ├── adapters/       # YouTube adapter
+│   │   ├── api/            # Views, Serializers
+│   │   └── persistence/    # Django models
+│   └── config/             # Settings, URLs
+├── tests/                  # Tests unitarios e integración
+├── manage.py
+├── pyproject.toml
+├── Dockerfile
+└── docker-compose.yml
+```
+
+## 🔧 Desarrollo Local
+
+```bash
+# Crear entorno virtual
+python -m venv .venv
+.venv\Scripts\activate  # Windows
+
+# Instalar dependencias
+poetry install
+
+# Correr servidor
+set PYTHONPATH=src
+python manage.py runserver
+```
+
+## 📄 Licencia
+
+Tomas Daniel Gonzalez
