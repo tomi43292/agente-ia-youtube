@@ -1,4 +1,4 @@
-# 🎬 Agente IA YouTube - Video Analysis API
+# 🎬 Agente IA YouTube - Video Analisis API
 
 API REST que analiza videos de YouTube utilizando un flujo de agentes orquestado con **LangGraph**. Extrae transcripciones, realiza análisis de sentimiento/tono y genera resúmenes estructurados.
 
@@ -16,7 +16,7 @@ API REST que analiza videos de YouTube utilizando un flujo de agentes orquestado
 
 - Python 3.12+
 - Docker & Docker Compose
-- API Key de Google Gemini
+- API Key de Google Gemini o Groq
 
 ## 🛠️ Instalación
 
