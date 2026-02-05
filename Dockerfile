@@ -28,10 +28,15 @@ COPY pyproject.toml poetry.lock ./
 # Instalamos dependencias de producción (sin las de dev)
 RUN poetry install --without dev --no-root
 
+# Verificamos que Django se instaló correctamente
+RUN /app/.venv/bin/python -c "import django; print(f'Django {django.VERSION} installed')"
+
 # --- Stage 2: Runtime ---
 FROM python:3.12-slim AS runtime
 
 ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    VIRTUAL_ENV=/app/.venv \
     PATH="/app/.venv/bin:$PATH" \
     PYTHONPATH="/app/src"
 
@@ -42,16 +47,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Creamos un usuario no-root por seguridad
 RUN useradd -m appuser
-USER appuser
 
 WORKDIR /app
 
-# Copiamos solo el entorno virtual y el código desde el builder
-COPY --from=builder /app/.venv /app/.venv
-COPY . .
+# IMPORTANTE: Primero copiamos el código fuente (esto puede traer .venv vacio si existe)
+COPY --chown=appuser:appuser . .
+
+# Luego copiamos el venv del builder (sobrescribe cualquier .venv local)
+COPY --from=builder --chown=appuser:appuser /app/.venv /app/.venv
+
+USER appuser
 
 # Exponemos el puerto de Django
 EXPOSE 8000
 
-# Comando para correr la aplicación con Uvicorn (ASGI)
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# Comando para correr la aplicación
+CMD ["/app/.venv/bin/python", "manage.py", "runserver", "0.0.0.0:8000"]
