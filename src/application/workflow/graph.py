@@ -1,14 +1,17 @@
 """
 Orquestador de Agentes (LangGraph).
 Implementa aristas condicionales y reintentos para resiliencia.
+
+El proveedor de LLM (Gemini, Groq, etc.) se configura via variables de entorno:
+    - LLM_PROVIDER: "gemini" o "groq"
+    - GEMINI_MODEL / GROQ_MODEL: modelo específico a usar
 """
 import operator
 from typing import Dict, Any, TypedDict, List, Annotated
 from langgraph.graph import StateGraph, END
-from langchain_google_genai import ChatGoogleGenerativeAI
 from domain.models import VideoAnalysis
 from infrastructure.adapters.youtube_adapter import YouTubeAdapter
-from infrastructure.adapters.exceptions import InfrastructureError
+from infrastructure.adapters.llm import get_llm_adapter
 
 class GraphState(TypedDict):
     video_url: str
@@ -21,12 +24,12 @@ class GraphState(TypedDict):
 # --- Inicialización de Componentes ---
 yt_adapter = YouTubeAdapter()
 
-# 1. Instanciar el modelo base de Gemini
-llm_base = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0)
+# Obtener el adaptador LLM según configuración (.env)
+# Soporta: gemini, groq (extensible a otros proveedores)
+llm_adapter = get_llm_adapter()
 
-# 2. Configurar la salida estructurada y LUEGO aplicar la lógica de reintento.
-# Esto asegura que el retry cubra tanto la generación como el parseo del esquema.
-structured_llm = llm_base.with_structured_output(VideoAnalysis).with_retry()
+# Configurar la salida estructurada según el schema VideoAnalysis
+structured_llm = llm_adapter.with_structured_output(VideoAnalysis)
 
 async def extraction_node(state: GraphState):
     """Nodo 1: Extracción con captura de errores clasificados."""

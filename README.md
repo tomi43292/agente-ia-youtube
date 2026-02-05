@@ -10,6 +10,7 @@ API REST que analiza videos de YouTube utilizando un flujo de agentes orquestado
 - ✅ Generación de 3 puntos clave
 - ✅ Persistencia en PostgreSQL
 - ✅ API asíncrona con Django REST Framework
+- ✅ Multi-proveedor LLM: Soporte para Gemini y Groq (fácilmente extensible)
 
 ## 📋 Requisitos Previos
 
@@ -34,14 +35,18 @@ cp .env.example .env
 ```
 
 Variables requeridas:
-| Variable | Descripción |
-|----------|-------------|
-| `POSTGRES_DB` | Nombre de la base de datos |
-| `POSTGRES_USER` | Usuario de PostgreSQL |
-| `POSTGRES_PASSWORD` | Contraseña de PostgreSQL |
-| `POSTGRES_HOST` | Host (usar `db` para Docker) |
-| `POSTGRES_PORT` | Puerto (default: 5432) |
-| `GOOGLE_API_KEY` | API Key de Google Gemini |
+| Variable | Descripción | Default |
+|----------|-------------|---------|
+| `LLM_PROVIDER` | Proveedor LLM: `gemini` o `groq` | `gemini` |
+| `GOOGLE_API_KEY` | API Key de Google Gemini | - |
+| `GEMINI_MODEL` | Modelo de Gemini a usar | `gemini-2.0-flash` |
+| `GROQ_API_KEY` | API Key de Groq (si usas Groq) | - |
+| `GROQ_MODEL` | Modelo de Groq a usar | `llama-3.3-70b-versatile` |
+| `POSTGRES_DB` | Nombre de la base de datos | - |
+| `POSTGRES_USER` | Usuario de PostgreSQL | - |
+| `POSTGRES_PASSWORD` | Contraseña de PostgreSQL | - |
+| `POSTGRES_HOST` | Host (usar `db` para Docker) | - |
+| `POSTGRES_PORT` | Puerto | `5432` |
 
 ### 3. Levantar con Docker
 
@@ -116,7 +121,36 @@ graph TD;
 | Nodo | Función |
 |------|---------|
 | `extract` | Obtiene transcripción y metadata del video |
-| `analyze` | Analiza sentimiento, tono y puntos clave con Gemini |
+| `analyze` | Analiza sentimiento, tono y puntos clave con LLM |
+
+## 🔄 Cambiar Proveedor LLM
+
+El proyecto soporta múltiples proveedores de LLM. Para cambiar entre ellos:
+
+### Usar Groq (recomendado - free tier generoso)
+
+```bash
+# En .env
+LLM_PROVIDER=groq
+GROQ_API_KEY=tu_api_key  # Obtener en https://console.groq.com/
+GROQ_MODEL=llama-3.3-70b-versatile
+```
+
+### Usar Gemini
+
+```bash
+# En .env
+LLM_PROVIDER=gemini
+GOOGLE_API_KEY=tu_api_key  # Obtener en https://aistudio.google.com/
+GEMINI_MODEL=gemini-2.0-flash
+```
+
+### Modelos Disponibles
+
+| Proveedor | Modelos |
+|-----------|----------|
+| **Groq** | `llama-3.3-70b-versatile`, `llama-3.1-8b-instant`, `mixtral-8x7b-32768` |
+| **Gemini** | `gemini-2.0-flash`, `gemini-2.0-flash-lite`, `gemini-1.5-flash` |
 
 ## 🧪 Tests
 
@@ -142,7 +176,8 @@ agente-ia-youtube/
 │   ├── domain/
 │   │   └── models.py       # Modelos Pydantic
 │   ├── infrastructure/
-│   │   ├── adapters/       # YouTube adapter
+│   │   ├── adapters/       # YouTube adapter, LLM adapters
+│   │   │   └── llm/        # Abstracción multi-proveedor
 │   │   ├── api/            # Views, Serializers
 │   │   └── persistence/    # Django models
 │   └── config/             # Settings, URLs
