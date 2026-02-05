@@ -1,10 +1,14 @@
 import os
 import sys
-
+# Cargamos las variables de entorno
+from dotenv import load_dotenv
+load_dotenv()
 # Añadimos 'src' al path para que Python encuentre tus módulos
 sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
 
 from application.workflow.graph import app
+
+
 
 def generate():
     # Creamos la carpeta docs si no existe para guardar artefactos
