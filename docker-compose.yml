@@ -1,3 +1,18 @@
+# =============================================================================
+# agente-ia-youtube — Docker Compose
+# =============================================================================
+# Orquesta los servicios necesarios para el entorno de desarrollo:
+#   - db: PostgreSQL 16 Alpine para persistencia de análisis.
+#   - web: Aplicación Django con el agente de IA (LangGraph + DRF).
+#
+# Uso:
+#   docker-compose up --build          # Levantar servicios
+#   docker-compose exec web python manage.py migrate  # Primera vez
+#   docker-compose down -v             # Detener y limpiar volúmenes
+#
+# Requiere: archivo .env con las variables definidas en .env.example
+# =============================================================================
+
 services:
   db:
     image: postgres:16-alpine

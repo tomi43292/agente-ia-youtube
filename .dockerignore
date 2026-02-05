@@ -1,3 +1,12 @@
+# =============================================================================
+# agente-ia-youtube — .dockerignore
+# =============================================================================
+# Excluye archivos innecesarios del contexto de build de Docker para:
+#   - Reducir el tamaño del contexto enviado al daemon.
+#   - Evitar copiar credenciales (.env) o entornos virtuales locales (.venv).
+#   - Acelerar el proceso de build al ignorar cache y docs.
+# =============================================================================
+
 **/*.pyc
 **/*.pyo
 **/*.pyd

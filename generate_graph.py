@@ -1,3 +1,17 @@
+"""
+Script de generación de diagramas del grafo LangGraph.
+
+Genera artefactos visuales del workflow de agentes para documentación:
+    - docs/workflow.mermaid: Código Mermaid para embeber en README.md o GitHub.
+    - docs/workflow_graph.png: Imagen PNG del grafo (requiere Graphviz instalado).
+
+Usage:
+    python generate_graph.py
+
+Note:
+    Requiere que las variables de entorno del LLM estén configuradas en .env,
+    ya que al importar el grafo se inicializan los adaptadores.
+"""
 import os
 import sys
 # Cargamos las variables de entorno
@@ -11,6 +25,16 @@ from application.workflow.graph import app
 
 
 def generate():
+    """
+    Genera los artefactos visuales del grafo de LangGraph.
+
+    Crea la carpeta ``docs/`` si no existe y exporta:
+        1. Código Mermaid (.mermaid) — siempre disponible.
+        2. Imagen PNG (.png) — opcional, depende de Graphviz.
+
+    Raises:
+        Exception: Si el grafo no puede ser compilado o exportado.
+    """
     # Creamos la carpeta docs si no existe para guardar artefactos
     os.makedirs("docs", exist_ok=True)
 

@@ -1,3 +1,18 @@
+# =============================================================================
+# agente-ia-youtube — Dockerfile (Multi-stage Build)
+# =============================================================================
+# Stage 1 (builder): Instala Poetry y dependencias de producción en un venv.
+# Stage 2 (runtime): Imagen slim con solo el venv compilado y el código fuente.
+#
+# Build:
+#   docker build -t agente-ia-youtube .
+#
+# Run:
+#   docker run -p 8000:8000 --env-file .env agente-ia-youtube
+#
+# Seguridad: Ejecuta como usuario no-root (appuser).
+# =============================================================================
+
 # --- Stage 1: Builder ---
 FROM python:3.12-slim AS builder
 
